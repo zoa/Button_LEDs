@@ -16,9 +16,10 @@ const byte update_frequency = 30; // how often to update the LEDs
 volatile unsigned long int interrupt_counter; // updates every time the interrupt timer overflows
 unsigned long int prev_interrupt_counter; // the main loop uses this to detect when the interrupt counter has changed 
 
+// track button-presses
 unsigned long int last_button_press;
 const unsigned long int DEBOUNCE_INTERVAL = 1000;
-const byte MULTIPLIER = 3;
+const byte MULTIPLIER = 3; // how much to speed up the button when pressed (not currently in use)
 
 unsigned long int switch_after; // swap routines after this many milliseconds
 unsigned int active_routine; // matches the #s from the switch statement in the main loop
@@ -61,7 +62,7 @@ void setup()
   strip.begin();
   strip.setAll(rgbInfo_t(0,0,0));
   
-  switch_after = 5000;
+  switch_after = 120000;
   interrupt_counter = switch_after + 1;
   prev_interrupt_counter = interrupt_counter;
   active_routine = 1;
@@ -82,6 +83,9 @@ void setup()
 
 void loop()
 {  
+  // the conditional should be replaced by a real test of whether the button is pressed
+  update_button_status( interrupt_counter >= 900 && interrupt_counter <= 1900 ); 
+  
   if ( interrupt_counter > switch_after )
   {
     order.advance();
@@ -89,8 +93,6 @@ void loop()
     if ( i != active_routine )
     {
       deallocate_waveforms();
-      
-    Serial.println(i);
       
       // Decide which routine to show next
       switch (i)
@@ -162,7 +164,6 @@ void loop()
   if ( interrupt_counter != prev_interrupt_counter )
   {
     prev_interrupt_counter = interrupt_counter;
-    update_button_status( interrupt_counter >= 900 && interrupt_counter <= 1500 );
     update();
   }
 }
@@ -173,7 +174,6 @@ void update_button_status( boolean pressed )
 {
   if ( pressed && millis() > last_button_press + DEBOUNCE_INTERVAL )
   {
-    Serial.println("pressed");
     //MsTimer2::msecs /= MULTIPLIER;
     last_update = update;
     update = update_fast_twinkles;
