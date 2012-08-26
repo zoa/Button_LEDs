@@ -18,7 +18,7 @@ unsigned long int prev_interrupt_counter; // the main loop uses this to detect w
 
 // track button-presses
 unsigned long int last_button_press;
-const unsigned long int DEBOUNCE_INTERVAL = 1000;
+const unsigned long int DEBOUNCE_INTERVAL = 0;//1000;
 const byte MULTIPLIER = 3; // how much to speed up the button when pressed (not currently in use)
 
 unsigned long int switch_after; // swap routines after this many milliseconds
@@ -31,7 +31,7 @@ void (*last_update)(); // used to restore after button-press causes a switch
 void (Zoa_WS2801::* library_update)(rgbInfo_t); 
 
 // Set the first variable to the NUMBER of pixels. 25 = 25 pixels in a row
-Zoa_WS2801 strip = Zoa_WS2801(stripLen, dataPin, clockPin, WS2801_GRB);
+Zoa_WS2801 strip = Zoa_WS2801(stripLen, dataPin, clockPin, WS2801_BGR);
 
 // Pointers to some waveform objects - currently they're reallocated each time the routine changes
 #define WAVES 6
@@ -62,7 +62,7 @@ void setup()
   strip.begin();
   strip.setAll(rgbInfo_t(0,0,0));
   
-  switch_after = 120000;
+  switch_after = 180000;
   interrupt_counter = switch_after + 1;
   prev_interrupt_counter = interrupt_counter;
   active_routine = 1;
@@ -84,7 +84,7 @@ void setup()
 void loop()
 {  
   // the conditional should be replaced by a real test of whether the button is pressed
-  update_button_status( interrupt_counter >= 900 && interrupt_counter <= 1900 ); 
+  //update_button_status( interrupt_counter >= 900 && interrupt_counter <= 1900 ); 
   
   if ( interrupt_counter > switch_after )
   {
@@ -147,12 +147,11 @@ void loop()
           waves[2] = new Sine_generator( 10, 200, 2 );
           break;
         default:
-          // dim sine waves with occasional flares of bright colors - could be adapted into a startle routine
           update = update_scaled_sum;
-          waves[0] = new Sine_generator( 0, 5, 7/4, PI/2 );
-          waves[1] = new Sine_generator( 0, 10, 7/4, 0 );
-          waves[2] = new Sine_generator( 0, 10, 13/4, 0 );
-          waves[3] = new Linear_generator( Linear_generator::TRIANGLE, 0, 255, 100, 0, 31 );
+          waves[0] = new Empty_waveform();
+          waves[1] = new Sine_generator( 5, 100, 7/4 );
+          waves[2] = new Sine_generator( 5, 100, 7/4, PI/2 );
+          waves[3] = new Sine_generator( 0, 150, 7 );
           break;
       }
       active_routine = i;
@@ -174,7 +173,6 @@ void update_button_status( boolean pressed )
 {
   if ( pressed && millis() > last_button_press + DEBOUNCE_INTERVAL )
   {
-    //MsTimer2::msecs /= MULTIPLIER;
     last_update = update;
     update = update_fast_twinkles;
     last_button_press = millis();
@@ -182,7 +180,6 @@ void update_button_status( boolean pressed )
   else if (!pressed&&update==update_fast_twinkles)
   {
     update = last_update;
-    //MsTimer2::msecs = update_frequency;
   }
 }
 
